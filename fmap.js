@@ -28,7 +28,8 @@ var VK = {
 		params = {
 			owner_id: album.owner_id,
 			album_id: album.id,
-			offset: offset || 0
+			offset: offset || 0,
+			extended: 1
 		};
 		return VK.api(method, params);
 	},
@@ -134,18 +135,60 @@ function findPhotos(user) {
 
 function createMap() {
 	var map = new ymaps.Map("map", {
-		center: [60, 30], 
+		center: [60, 30],
 		zoom: 7
 	});
 	return map;
 }
 
 function addPhotos(photos, map) {
-	var clusterer = new ymaps.Clusterer();
+	var clusterLayout = ymaps.templateLayoutFactory.createClass(
+    '<div class="photoIcon cluster" style="background-image: url(\'{{ properties.iconSrc }}\');">\
+    	<div>{% if properties.geoObjects.length > 999 %}999+{% else %}{{ properties.geoObjects.length }}{% endif %}</div>\
+    </div>', {
+    	build: function () {
+    		this.getData().properties.set('iconSrc', this.getData().properties.get('geoObjects')[0].options.get('iconSrc'));
+        this.constructor.superclass.build.call(this);
+      }
+    }
+	);
+
+	var iconLayoutBig = ymaps.templateLayoutFactory.createClass(
+    '<div class="photoIcon" style="background-image: url(\'{{ options.src }}\');"></div>'
+	);
+	var iconLayoutSmall = ymaps.templateLayoutFactory.createClass(
+    '<div class="photoIcon small" style="background-image: url(\'{{ options.src }}\');"></div>'
+	);
+
+	var clusterer = new ymaps.Clusterer({
+		margin: 23,
+		gridSize: 64,
+		minClusterSize: 5,
+		clusterIconLayout: clusterLayout,
+		clusterIconShape: {
+      type: 'Rectangle',
+      coordinates: [
+        [-22, -22], [22, 22]
+      ]
+    }
+	});
 	clusterer.add(photos.map(function(photo) {
+		var isBig = false; // photo.likes.count > 20
 		return photo.placemark = new ymaps.Placemark ([photo.lat, photo.long], {
 			balloonContentHeader: photo.id,
-			balloonContent: '<a target="_blank" href="' + photo.url + '"><img src="' + photo.photo_130 + '"></a>'
+			balloonContent: '<a target="_blank" href="' + photo.url + '"><img src="' + photo.photo_130 + '"></a>',
+			iconSrc: photo.photo_75,
+		}, {
+			iconLayout: isBig ? iconLayoutBig : iconLayoutSmall,
+			iconSrc: photo.photo_75,
+    	iconShape: {
+        type: 'Rectangle',
+        coordinates: isBig ? [
+          [-22, -22], [22, 22]
+        ] : [
+          [-7, -7], [7, 7]
+        ]
+      }
 		});
 	}));
 	map.geoObjects.add(clusterer);
