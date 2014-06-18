@@ -83,8 +83,7 @@ function mergeDeferreds(array) {
 }
 
 function findPhotos(user) {
-	user = parseInt(user) || VK.getUserId;
-	return $.when(user).then(VK.userFriends).then(function(data) {
+	return VK.userFriends(user).then(function(data) {
 		count.friends[1] += data.count;
 		updateCount();
 		var friendPromises = data.items.map(function(user) {
