@@ -1,135 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<title>Friends Photo Map</title>
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-	<script src="http://api-maps.yandex.ru/2.1/?lang=ru_RU" type="text/javascript"></script>
-	<script src="fmap.js"></script>
-	<link rel="stylesheet" href="reset.css">
-	<style>
-	.container {
-		width: 900px;
-		margin: auto;
-		position: relative;
-	}
+  <meta charset="UTF-8">
+  <title>Friends Photo Map</title>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="http://api-maps.yandex.ru/2.1/?lang=ru_RU" type="text/javascript"></script>
+  <script src="fmap.js"></script>
+  <link rel="stylesheet" href="reset.css">
+  <style>
+  .container {
+    width: 900px;
+    margin: auto;
+    position: relative;
+  }
 
-	.counters div {
-		display: none;
-		text-align: center;
-		font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-		font-size: 1.5em;
-		line-height: 100px;
-	}
+  .counters div {
+    display: none;
+    text-align: center;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 1.5em;
+    line-height: 100px;
+  }
 
-	.map, .counters {
-		width: 900px;
-		height: 600px;
-		position: absolute;
-		left: 0px;
-		top: 0px;
-		box-shadow: 2px 2px 5px #999;
-	}
+  .map, .counters {
+    width: 900px;
+    height: 600px;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    box-shadow: 2px 2px 5px #999;
+  }
 
-	.counters {
-		background-color: rgba(192,192,192,0.8);
-		z-index: 1;
-	}
+  .counters {
+    background-color: rgba(192,192,192,0.8);
+    z-index: 1;
+  }
 
-	#id {
-		width: 70px;
-		height: 15px;
-	}
+  #id {
+    width: 70px;
+    height: 15px;
+  }
 
-	.photoIcon {
-		position: relative;
-		top: -22px;
-		left: -22px;
-		width: 40px;
-  	height: 40px;
-  	background-size: cover;
-  	background-position: center;
-  	outline: 1px solid rgba(0, 0, 0, 0.1);
-  	border: 2px solid #FFF;
-  	box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
-	}
+  .photoIcon {
+    position: relative;
+    top: -22px;
+    left: -22px;
+    width: 40px;
+    height: 40px;
+    background-size: cover;
+    background-position: center;
+    outline: 1px solid rgba(0, 0, 0, 0.1);
+    border: 2px solid #FFF;
+    box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
+  }
 
-	.photoIcon.cluster {
+  .photoIcon.cluster {
     box-shadow: 2px 2px 0px #fff, 3px 3px 0px rgba(0, 0, 0, 0.1), 3px 3px 2px rgba(0, 0, 0, 0.3);
     text-align: center;
-	}
+  }
 
-	.photoIcon.cluster div {
-		margin: 13px 0;
-		padding: 1px 5px 2px;
-		font-family: Verdana;
-		font-size: 11px;
-		color: #FFF;
-		background: rgba(0, 0, 0, 0.6);
-		display: inline-block;
-		border-radius: 7px;
-	}
+  .photoIcon.cluster div {
+    margin: 13px 0;
+    padding: 1px 5px 2px;
+    font-family: Verdana;
+    font-size: 11px;
+    color: #FFF;
+    background: rgba(0, 0, 0, 0.6);
+    display: inline-block;
+    border-radius: 7px;
+  }
 
-	.photoIcon.small {
-		top: -11px;
-		left: -11px;
-  	width: 20px;
-  	height: 20px;
-  	border-width: 1px;
-  	/*box-shadow: none;*/
-	}
+  .photoIcon.small {
+    top: -11px;
+    left: -11px;
+    width: 20px;
+    height: 20px;
+    border-width: 1px;
+    /*box-shadow: none;*/
+  }
 
-	.clusterBalloon {
-		/*max-height: 300px;*/
-	}
-	.clusterBalloon .row {
-		margin-bottom: -4px;
-	}
-	.clusterBalloon .row img {
-		margin-right: 2px;
-	}
-	</style>
+  .clusterBalloon {
+    /*max-height: 300px;*/
+  }
+  .clusterBalloon .row {
+    margin-bottom: -4px;
+  }
+  .clusterBalloon .row img {
+    margin-right: 2px;
+  }
+  </style>
 </head>
 <body>
-	<div class="container" id="container">
-			<div class="counters" id="counters">
-				<div id="enter_id">
-					Введите ваш ID:&nbsp<textarea id="id"></textarea>
-				</div>
-				<div>
-					Ищем альбомы у друзей..&nbsp<span class="counter" id="friends"></span>
-				</div>
-				<div>
-					Ищем фото в альбомах..&nbsp<span class="counter" id="albums"></span>
-				</div>
-				<div>
-					Найдено фото с геометкой:&nbsp<span class="counter" id="photos"></span>
-				</div>
-			</div>
-			<div class="map" id="map"></div>
-	</div>
-	<script>
-		$(document).ready(function() {
-			var idDeferred = $.Deferred(),
-				userPromise = idDeferred.then(findPhotos),
-				ymapsDeferred = $.Deferred(),
-				mapPromise = ymapsDeferred.then(createMap);
-			$('#enter_id').show();
-			$('#id').keydown(function(event) {
-				if (event.which == 13) {
-					var user = $('#id').val();
-					$('#enter_id').hide();
-					idDeferred.resolve(user);
-				}
-			});
-			ymaps.ready(function() {
-				ymapsDeferred.resolve();
-			});
-			$.when(userPromise, mapPromise).done(function(userArgs, map) {
-				var photos = userArgs[0];
-				addPhotos(photos, map);
-			});
-		});
-	</script>
+  <div class="container" id="container">
+    <div class="counters" id="counters">
+      <div id="enter_id">
+        Введите ваш ID:&nbsp<textarea id="id"></textarea>
+      </div>
+      <div>
+        Ищем альбомы у друзей..&nbsp<span class="counter" id="friends"></span>
+      </div>
+      <div>
+        Ищем фото в альбомах..&nbsp<span class="counter" id="albums"></span>
+      </div>
+      <div>
+        Найдено фото с геометкой:&nbsp<span class="counter" id="photos"></span>
+      </div>
+    </div>
+    <div class="map" id="map"></div>
+  </div>
 </body>
 </html>

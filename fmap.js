@@ -42,7 +42,7 @@ var VK = {
   },
   getId: function(nick) {
     var method = 'utils.resolveScreenName',
-      params = {screen_name: nick};
+        params = {screen_name: nick};
     return VK.api(method, params);
   },
   parseLink: function(link) {
@@ -138,7 +138,7 @@ function createMap() {
   var map = new ymaps.Map("map", {
     center: [60, 30],
     zoom: 7
-  });
+  }, { maxZoom: 16 });
   return map;
 }
 
@@ -161,8 +161,7 @@ function addPhotos(photos, map) {
         this.getData().properties.set('iconSrc', mostLiked.options.get('iconSrc'));
         this.constructor.superclass.build.call(this);
       }
-    }
-  );
+    });
 
   var clusterBalloonLayout = ymaps.templateLayoutFactory.createClass('<div></div>', {
     build: function () {
@@ -182,7 +181,7 @@ function addPhotos(photos, map) {
           curHeight = h;
         }
 
-        row.push({ src: photo.photo_130, width: w, height: h, unknown: !!photo.width });
+        row.push({ url: photo.url, src: photo.photo_130, width: w, height: h, unknown: !!photo.width });
 
         var scaledWidth = w * (curHeight / h) + 2;
         curWidth += scaledWidth;
@@ -202,7 +201,7 @@ function addPhotos(photos, map) {
               row[j].width = rowWidth - curWidth;
             }
 
-            html.push('<img style="width: ' + Math.round(row[j].width) + 'px; height: ' + Math.round(row[j].height) + 'px;" src="' + row[j].src + '"/>');
+            html.push('<a target="_blank" href="' + row[j].url + '"><img style="width: ' + Math.round(row[j].width) + 'px; height: ' + Math.round(row[j].height) + 'px;" src="' + row[j].src + '"/></a>');
             curWidth += Math.round(row[j].width) + 2;
           }
           html.push('</div>');
@@ -256,13 +255,13 @@ function addPhotos(photos, map) {
     clusterBalloonMaxWidth: 420,
     clusterBalloonMaxHeight: 300,
     clusterBalloonContentLayout: clusterBalloonLayout,
-    clusterDisableClickZoom: true
+    //clusterDisableClickZoom: true
   });
   clusterer.add(photos.map(function(photo) {
     var isBig = false; // photo.likes.count > 20
     return photo.placemark = new ymaps.Placemark ([photo.lat, photo.long], {
-      balloonContentHeader: photo.id,
-      balloonContent: '<a target="_blank" href="' + photo.url + '"><img src="' + photo.photo_130 + '"></a>',
+      //balloonContentHeader: photo.id,
+      balloonContent: '<a target="_blank" href="' + photo.url + '"><img src="' + photo.photo_130 + '"/></a>'
     }, {
       photo: photo,
       iconLayout: isBig ? iconLayoutBig : iconLayoutSmall,
@@ -280,3 +279,25 @@ function addPhotos(photos, map) {
   map.geoObjects.add(clusterer);
   $('#counters').hide();
 }
+
+$(document).ready(function() {
+  var idDeferred = $.Deferred(),
+  userPromise = idDeferred.then(findPhotos),
+  ymapsDeferred = $.Deferred(),
+  mapPromise = ymapsDeferred.then(createMap);
+  $('#enter_id').show();
+  $('#id').keydown(function(event) {
+    if (event.which == 13) {
+      var user = $('#id').val();
+      $('#enter_id').hide();
+      idDeferred.resolve(user);
+    }
+  });
+  ymaps.ready(function() {
+    ymapsDeferred.resolve();
+  });
+  $.when(userPromise, mapPromise).done(function(userArgs, map) {
+    var photos = userArgs[0];
+    addPhotos(photos, map);
+  });
+});
