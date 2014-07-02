@@ -1,55 +1,4 @@
 var VK = {
-<<<<<<< HEAD
-	api: function(method, params) {
-		if (!method) {
-			return;
-		}
-		var url = "https://api.vk.com/method/" + method;
-		params = params || {};
-		params.v = params.v || '5.21';
-		return $.get(url, params, null, 'jsonp').fail(function() {
-			console.log(arguments);
-		}).then(function(data) {
-			var resp = $.Deferred();
-			return data.response ?
-			resp.resolve(data.response) :
-			resp.reject(data.error);
-		});
-	},
-	userAlbums: function(user) {
-		var method = 'photos.getAlbums',
-		params = {
-			owner_id: user.id || user,
-			need_system: 1
-		};
-		return VK.api(method, params);
-	},
-	albumPhotos: function(album, offset) {
-		var method = 'photos.get',
-		params = {
-			owner_id: album.owner_id,
-			album_id: album.id,
-			offset: offset || 0
-		};
-		return VK.api(method, params);
-	},
-	userFriends: function(user) {
-		var method = 'friends.get',
-		params = {
-			user_id: user.id || user
-		};
-		return VK.api(method, params);
-	},
-	getId: function(nick) {
-		var method = 'utils.resolveScreenName',
-			params = {screen_name: nick};
-		return VK.api(method, params);
-	},
-	parseLink: function(link) {
-		var regex = /^(?:(https?):\/\/)vk.com\/(app\d+|[a-z0-9_\.]*)/
-		return link.match.slice(1);
-	}
-=======
   api: function(method, params) {
     if (!method) {
       return;
@@ -100,7 +49,6 @@ var VK = {
     var regex = /^(?:(https?):\/\/)vk.com\/(app\d+|[a-z0-9_\.]*)/
     return link.match.slice(1);
   }
->>>>>>> origin/pr/3
 }
 
 var count = {
@@ -186,25 +134,6 @@ function findPhotos(user) {
 }
 
 function createMap() {
-<<<<<<< HEAD
-	var map = new ymaps.Map("map", {
-		center: [60, 30], 
-		zoom: 7
-	});
-	return map;
-}
-
-function addPhotos(photos, map) {
-	var clusterer = new ymaps.Clusterer();
-	clusterer.add(photos.map(function(photo) {
-		return photo.placemark = new ymaps.Placemark ([photo.lat, photo.long], {
-			balloonContentHeader: photo.id,
-			balloonContent: '<a target="_blank" href="' + photo.url + '"><img src="' + photo.photo_130 + '"></a>'
-		});
-	}));
-	map.geoObjects.add(clusterer);
-	$('#counters').hide();
-=======
   var map = new ymaps.Map("map", {
     center: [60, 30],
     zoom: 7
@@ -348,7 +277,6 @@ function addPhotos(photos, map) {
   }));
   map.geoObjects.add(clusterer);
   $('#counters').hide();
->>>>>>> origin/pr/3
 }
 
 $(document).ready(function() {
