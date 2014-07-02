@@ -1,4 +1,5 @@
 var VK = {
+<<<<<<< HEAD
 	api: function(method, params) {
 		if (!method) {
 			return;
@@ -48,6 +49,58 @@ var VK = {
 		var regex = /^(?:(https?):\/\/)vk.com\/(app\d+|[a-z0-9_\.]*)/
 		return link.match.slice(1);
 	}
+=======
+  api: function(method, params) {
+    if (!method) {
+      return;
+    }
+    var url = "https://api.vk.com/method/" + method;
+    params = params || {};
+    params.v = params.v || '5.21';
+    return $.get(url, params, null, 'jsonp').fail(function() {
+      console.log(arguments);
+    }).then(function(data) {
+      var resp = $.Deferred();
+      return data.response ?
+      resp.resolve(data.response) :
+      resp.reject(data.error);
+    });
+  },
+  userAlbums: function(user) {
+    var method = 'photos.getAlbums',
+    params = {
+      owner_id: user.id || user,
+      need_system: 1
+    };
+    return VK.api(method, params);
+  },
+  albumPhotos: function(album, offset) {
+    var method = 'photos.get',
+    params = {
+      owner_id: album.owner_id,
+      album_id: album.id,
+      offset: offset || 0,
+      extended: 1
+    };
+    return VK.api(method, params);
+  },
+  userFriends: function(user) {
+    var method = 'friends.get',
+    params = {
+      user_id: user.id || user
+    };
+    return VK.api(method, params);
+  },
+  getId: function(nick) {
+    var method = 'utils.resolveScreenName',
+        params = {screen_name: nick};
+    return VK.api(method, params);
+  },
+  parseLink: function(link) {
+    var regex = /^(?:(https?):\/\/)vk.com\/(app\d+|[a-z0-9_\.]*)/
+    return link.match.slice(1);
+  }
+>>>>>>> origin/pr/3
 }
 
 var count = {
@@ -133,6 +186,7 @@ function findPhotos(user) {
 }
 
 function createMap() {
+<<<<<<< HEAD
 	var map = new ymaps.Map("map", {
 		center: [60, 30], 
 		zoom: 7
@@ -150,4 +204,171 @@ function addPhotos(photos, map) {
 	}));
 	map.geoObjects.add(clusterer);
 	$('#counters').hide();
+=======
+  var map = new ymaps.Map("map", {
+    center: [60, 30],
+    zoom: 7
+  }, { maxZoom: 16 });
+  return map;
 }
+
+function addPhotos(photos, map) {
+  var clusterLayout = ymaps.templateLayoutFactory.createClass(
+    '<div class="photoIcon cluster" style="background-image: url(\'{{ properties.iconSrc }}\');">\
+      <div>{% if properties.geoObjects.length > 999 %}999+{% else %}{{ properties.geoObjects.length }}{% endif %}</div>\
+    </div>', {
+      build: function () {
+        var geoObjects = this.getData().properties.get('geoObjects');
+        var mostLiked;
+        var likes = -1;
+        for (var i = 1; i < geoObjects.length; i++) {
+          var photo = geoObjects[i].options.get('photo');
+          if (photo.likes.count > likes) {
+            likes = photo.likes.count;
+            mostLiked = geoObjects[i];
+          }
+        }
+        this.getData().properties.set('iconSrc', mostLiked.options.get('iconSrc'));
+        this.constructor.superclass.build.call(this);
+      }
+    });
+
+  var clusterBalloonLayout = ymaps.templateLayoutFactory.createClass('<div></div>', {
+    build: function () {
+      var geoObjects = this.getData().properties.get('geoObjects');
+      var rows = [];
+      var row = [];
+      var curWidth = 0;
+      var curHeight = 0;
+      var rowWidth = 400;
+      var rowMaxHeight = 60;
+      var html = [];
+      for (var i = 0; i < geoObjects.length; i++) {
+        var photo = geoObjects[i].options.get('photo');
+        var w = photo.width || 100;
+        var h = photo.height || 100;
+        if (row.length == 0) {
+          curHeight = h;
+        }
+
+        row.push({ url: photo.url, src: photo.photo_130, width: w, height: h, unknown: !!photo.width });
+
+        var scaledWidth = w * (curHeight / h) + 2;
+        curWidth += scaledWidth;
+
+        var rowHeight = curHeight * (rowWidth / curWidth);
+        if ((rowHeight <= rowMaxHeight) || (i == geoObjects.length - 1)) {
+          rowHeight = Math.min(rowHeight, rowMaxHeight);
+
+          rows.push(row);
+          html.push('<div class="row">');
+          curWidth = 0;
+          for (var j = 0; j < row.length; j++) {
+            row[j].width *= rowHeight / row[j].height;
+            row[j].height = rowHeight;
+
+            if ((i < geoObjects.length - 1) && (j == row.length - 1)) {
+              row[j].width = rowWidth - curWidth;
+            }
+
+            html.push('<a target="_blank" href="' + row[j].url + '"><img style="width: ' + Math.round(row[j].width) + 'px; height: ' + Math.round(row[j].height) + 'px;" src="' + row[j].src + '"/></a>');
+            curWidth += Math.round(row[j].width) + 2;
+          }
+          html.push('</div>');
+
+          curWidth = 0;
+          curHeight = 0;
+          row = [];
+        }
+      }
+
+      this.e = document.createElement('div');
+      this.e.className = 'clusterBalloon';
+      this.e.innerHTML = html.join('');
+      this.getParentElement().appendChild(this.e);
+    },
+    clear: function() {
+      if (this.e) {
+        this.getParentElement().removeChild(this.e);
+        this.e = false;
+      }
+    },
+    destroy: function() {
+      this.clear();
+    },
+    rebuild: function() {
+      this.clear();
+      this.build();
+    }
+  });
+
+  var iconLayoutBig = ymaps.templateLayoutFactory.createClass(
+    '<div class="photoIcon" style="background-image: url(\'{{ options.src }}\');"></div>'
+  );
+  var iconLayoutSmall = ymaps.templateLayoutFactory.createClass(
+    '<div class="photoIcon small" style="background-image: url(\'{{ options.src }}\');"></div>'
+  );
+
+  var clusterer = new ymaps.Clusterer({
+    margin: 23,
+    gridSize: 64,
+    minClusterSize: 5,
+    clusterIconLayout: clusterLayout,
+    clusterIconShape: {
+      type: 'Rectangle',
+      coordinates: [
+        [-22, -22], [22, 22]
+      ]
+    },
+    //clusterBalloonCloseButton: false,
+    clusterBalloonMinWidth: 420,
+    clusterBalloonMaxWidth: 420,
+    clusterBalloonMaxHeight: 300,
+    clusterBalloonContentLayout: clusterBalloonLayout,
+    //clusterDisableClickZoom: true
+  });
+  clusterer.add(photos.map(function(photo) {
+    var isBig = false; // photo.likes.count > 20
+    return photo.placemark = new ymaps.Placemark ([photo.lat, photo.long], {
+      //balloonContentHeader: photo.id,
+      balloonContent: '<a target="_blank" href="' + photo.url + '"><img src="' + photo.photo_130 + '"/></a>'
+    }, {
+      photo: photo,
+      iconLayout: isBig ? iconLayoutBig : iconLayoutSmall,
+      iconSrc: photo.photo_75,
+      iconShape: {
+        type: 'Rectangle',
+        coordinates: isBig ? [
+          [-22, -22], [22, 22]
+        ] : [
+          [-11, -11], [11, 11]
+        ]
+      }
+    });
+  }));
+  map.geoObjects.add(clusterer);
+  $('#counters').hide();
+>>>>>>> origin/pr/3
+}
+
+$(document).ready(function() {
+  var idDeferred = $.Deferred(),
+  userPromise = idDeferred.then(findPhotos),
+  ymapsDeferred = $.Deferred(),
+  mapPromise = ymapsDeferred.then(createMap);
+  $('#enter_id').show();
+  $('#id').keydown(function(event) {
+    if (event.which == 13) {
+      var user = $('#id').val();
+      $('#enter_id').hide();
+      idDeferred.resolve(user);
+    }
+  });
+  ymaps.ready(function() {
+    ymapsDeferred.resolve();
+  });
+  $.when(userPromise, mapPromise).done(function(userArgs, map) {
+    var photos = userArgs[0];
+    addPhotos(photos, map);
+  });
+});
